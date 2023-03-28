@@ -85,35 +85,70 @@ export class TodoPage implements OnInit {
   }
 
   exportToPdf() {
-    const doc = new jsPDF();
+    const doc = new jsPDF({
+      unit: 'pt',
+      format: 'a4'
+    });
+  
+    // Set font size for header and footer
+    const headerFooterFontSize = 10;
+  
+    // Set margins
+    const marginX = 20;
+    const marginY = 30;
   
     // Add header
     const header = 'Todo List';
-    const headerHeight = 10;
-    const headerWidth = doc.getStringUnitWidth(header) * doc.getFontSize() / doc.internal.scaleFactor;
+    const headerWidth = doc.getStringUnitWidth(header) * headerFooterFontSize / doc.internal.scaleFactor;
     const headerX = (doc.internal.pageSize.getWidth() - headerWidth) / 2;
-    const headerY = 10;
+    const headerY = marginY;
+    doc.setFontSize(headerFooterFontSize);
     doc.text(header, headerX, headerY);
   
     // Add footer
-    const pageCount = doc.getNumberOfPages();
-    const footerHeight = 10;
+    let pageCount = doc.getNumberOfPages();
     const footerWidth = doc.internal.pageSize.getWidth();
-    const footerX = 10;
-    const footerY = doc.internal.pageSize.getHeight() - footerHeight;
+    const footerX = 0;
+    const footerY = doc.internal.pageSize.getHeight() - marginY;
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      doc.text(`Page ${i} of ${pageCount}`, footerX, footerY);
+      doc.setFontSize(headerFooterFontSize);
+      doc.text(`Page ${i} of ${pageCount}`, footerX, footerY, { align: 'center' });
     }
   
     // Add todo list
     const todoList = this.todos.map((todo, index) => {
-      let state = todo.completeState ? "Completed" : "To be completed";
-      return `${index + 1}. ${todo.task} - ${todo.description} - ${state}`;
+      return `${index + 1}. ${todo.task} - ${todo.description} - ${todo.completeState}`;
     });
+
+    for (let index = 1; index < 150; index++){
+      todoList.push(`${this.todos.length + index}. Sample Task - ${index} - False`)
+    }
+
     const todoListText = todoList.join('\n');
-    doc.setFontSize(12);
-    doc.text(todoListText, 20, 30);
+    const todoListLines = doc.splitTextToSize(todoListText, doc.internal.pageSize.getWidth() - 2 * marginX);
+    const availableHeight = doc.internal.pageSize.getHeight() - 2 * marginY - headerFooterFontSize - 2 * headerFooterFontSize; // subtract header and footer heights
+    let currentY = headerY + headerFooterFontSize;
+    let currentPage = 1;
+    for (let i = 0; i < todoListLines.length; i++) {
+      const line = todoListLines[i];
+      const lineHeight = doc.getFontSize();
+      if (currentY + lineHeight > availableHeight) {
+        doc.addPage();
+        currentPage++;
+        pageCount++;
+        currentY = marginY;
+        // Add header and footer to new page
+        doc.setFontSize(headerFooterFontSize);
+        doc.text(header, headerX, currentY);
+        doc.setFontSize(headerFooterFontSize);
+        doc.text(`Page ${currentPage} of ${pageCount}`, footerX, footerY, { align: 'center' });
+        currentY += headerFooterFontSize + headerFooterFontSize;
+      }
+      doc.setFontSize(12);
+      doc.text(line, marginX, currentY);
+      currentY += lineHeight;
+    }
   
     // Save PDF
     doc.save('todo-list.pdf');
