@@ -86,14 +86,17 @@ export class TodoPage implements OnInit {
   }
 
   exportToPdf(todos: Todo[]) {
-    // Hardcode part to add more items
+    const TodoList:Todo[] = [];
+    todos.forEach(value => TodoList.push(Object.assign({}, value)));
+    
+    // Hardcode part to add more items - uncomment if needed
     // for (let index = 1; index < 150; index++){
     //   const newSampleTodo: Todo = {
     //     task: `Sample todo number ${index}`,
     //     completeState: false,
     //     description: 'Something Random'
     //   };
-    //   todos.push(newSampleTodo);
+    //   TodoList.push(newSampleTodo);
     // };
 
     const doc = new jsPDF({
@@ -122,9 +125,9 @@ export class TodoPage implements OnInit {
     let tableData = [];
   
     let currentRow = 0;
-    while (currentRow < todos.length) {
+    while (currentRow < TodoList.length) {
       // Get the remaining todos to display
-      const remainingTodos = todos.slice(currentRow);
+      const remainingTodos = TodoList.slice(currentRow);
   
       // Calculate the max rows that fit on the page
       const maxRows = Math.floor(maxTableHeight / 25);
