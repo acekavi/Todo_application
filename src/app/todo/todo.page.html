@@ -1,0 +1,55 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>
+      Todo List
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-list>
+    <ion-item *ngFor="let todo of todos">
+      <ion-checkbox [checked]="todo.completeState" color="success" 
+                  (ionChange)="completeTodo(todo)"
+                  class="ion-float-start ion-margin-end"></ion-checkbox>
+
+      <ion-label
+          [ngStyle]="{'text-decoration': todo.completeState ? 'line-through' : 'none'}"
+          class="ion-float-end">
+        <h3>{{ todo.task }}</h3>
+        <p>{{ todo.description }}</p>
+      </ion-label>
+
+      <ion-button fill="clear" (click)="removeTodo(todo)">
+        <ion-icon color="danger" size="small" name="trash-outline"></ion-icon>
+      </ion-button>
+    </ion-item>
+  </ion-list>
+  
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="addTodo()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button>
+      <ion-icon name="pdf"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button>
+      <ion-icon name="chevron-up-circle"></ion-icon>
+    </ion-fab-button>
+    <ion-fab-list side="top">
+      <ion-fab-button fab-label="Add new todo">
+        <ion-icon name="add" (click)="addTodo()"></ion-icon>
+      </ion-fab-button>
+      <ion-fab-button fab-label="Export to PDF">
+        <ion-icon name="document" (click)="exportToPdf()"></ion-icon>
+      </ion-fab-button>
+    </ion-fab-list>
+  </ion-fab>
+
+</ion-content>
