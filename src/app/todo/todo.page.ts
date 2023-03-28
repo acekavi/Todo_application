@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AlertController } from '@ionic/angular';
 
 import {jsPDF} from 'jspdf';
+import autoTable from 'jspdf-autotable'
 
 export interface Todo {
   task: string;
@@ -84,74 +85,88 @@ export class TodoPage implements OnInit {
     localStorage.setItem('todos', JSON.stringify(this.todos));
   }
 
-  exportToPdf() {
+  exportToPdf(todos: Todo[]) {
+    // Hardcode part to add more items
+    // for (let index = 1; index < 150; index++){
+    //   const newSampleTodo: Todo = {
+    //     task: `Sample todo number ${index}`,
+    //     completeState: false,
+    //     description: 'Something Random'
+    //   };
+    //   todos.push(newSampleTodo);
+    // };
+
     const doc = new jsPDF({
       unit: 'pt',
       format: 'a4'
     });
-  
-    // Set font size for header and footer
-    const headerFooterFontSize = 10;
-  
-    // Set margins
-    const marginX = 20;
-    const marginY = 30;
+
+    // Set font size and style for header
+    doc.setFontSize(18);
+    doc.setFont('arial', 'bold');
   
     // Add header
-    const header = 'Todo List';
-    const headerWidth = doc.getStringUnitWidth(header) * headerFooterFontSize / doc.internal.scaleFactor;
-    const headerX = (doc.internal.pageSize.getWidth() - headerWidth) / 2;
-    const headerY = marginY;
-    doc.setFontSize(headerFooterFontSize);
-    doc.text(header, headerX, headerY);
+    doc.text('Todo List', 50, 30, {align: 'center'});
   
-    // Add footer
-    let pageCount = doc.getNumberOfPages();
-    const footerWidth = doc.internal.pageSize.getWidth();
-    const footerX = 0;
-    const footerY = doc.internal.pageSize.getHeight() - marginY;
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(headerFooterFontSize);
-      doc.text(`Page ${i} of ${pageCount}`, footerX, footerY, { align: 'center' });
+    // Set font size and style for table data
+    doc.setFontSize(12);
+    doc.setFont('arial', 'normal');
+  
+    // Define table column headers
+    const headers = [['Task', 'Description', 'Completed']];
+  
+    // Set max table height per page
+    const maxTableHeight = doc.internal.pageSize.height;
+  
+    // Define table data for each page
+    let tableData = [];
+  
+    let currentRow = 0;
+    while (currentRow < todos.length) {
+      // Get the remaining todos to display
+      const remainingTodos = todos.slice(currentRow);
+  
+      // Calculate the max rows that fit on the page
+      const maxRows = Math.floor(maxTableHeight / 25);
+  
+      // Add rows up to the max rows or the remaining todos
+      const tableRows = remainingTodos.slice(0, maxRows).map(todo => [todo.task, todo.description, todo.completeState ? 'Yes' : 'No']);
+
+      // Add table data to array for each page
+      tableData.push(tableRows);
+  
+      // Update current row index
+      currentRow += maxRows;
     }
   
-    // Add todo list
-    const todoList = this.todos.map((todo, index) => {
-      return `${index + 1}. ${todo.task} - ${todo.description} - ${todo.completeState}`;
-    });
-
-    for (let index = 1; index < 150; index++){
-      todoList.push(`${this.todos.length + index}. Sample Task - ${index} - False`)
-    }
-
-    const todoListText = todoList.join('\n');
-    const todoListLines = doc.splitTextToSize(todoListText, doc.internal.pageSize.getWidth() - 2 * marginX);
-    const availableHeight = doc.internal.pageSize.getHeight() - 2 * marginY - headerFooterFontSize - 2 * headerFooterFontSize; // subtract header and footer heights
-    let currentY = headerY + headerFooterFontSize;
-    let currentPage = 1;
-    for (let i = 0; i < todoListLines.length; i++) {
-      const line = todoListLines[i];
-      const lineHeight = doc.getFontSize();
-      if (currentY + lineHeight > availableHeight) {
+    // Add table to PDF document for each page
+    tableData.forEach((tableRows, index) => {
+      // Add new page for every table beyond the first
+      if (index > 0) {
         doc.addPage();
-        currentPage++;
-        pageCount++;
-        currentY = marginY;
-        // Add header and footer to new page
-        doc.setFontSize(headerFooterFontSize);
-        doc.text(header, headerX, currentY);
-        doc.setFontSize(headerFooterFontSize);
-        doc.text(`Page ${currentPage} of ${pageCount}`, footerX, footerY, { align: 'center' });
-        currentY += headerFooterFontSize + headerFooterFontSize;
       }
-      doc.setFontSize(12);
-      doc.text(line, marginX, currentY);
-      currentY += lineHeight;
-    }
   
-    // Save PDF
-    doc.save('todo-list.pdf');
-  }  
-  
+      // Add table to page
+      autoTable(doc, {
+        head: headers,
+        body: tableRows,
+        theme: 'grid',
+        startY: 40, // Set table start position
+        margin: { left: 15, right: 15 }, // Set table margins
+        headStyles: { fillColor: [200, 200, 200] }, // Set background color for header row
+        bodyStyles: { valign: 'middle' }, // Set vertical alignment for table cells
+        didDrawPage: (data) => {
+          // Set font size and style for footer
+          doc.setFontSize(10);
+          doc.setFont('times', 'normal');
+          
+          // Add footer
+          doc.text(`Page ${index + 1}`, 300, doc.internal.pageSize.getHeight() - 20, {align: 'center'});
+        }
+        })
+    })
+
+    // Save PDF document
+    doc.save('Todo List.pdf');
+  }
 }
